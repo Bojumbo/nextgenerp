@@ -14,13 +14,15 @@ interface FieldConfig {
 
 interface SchemaManagerProps {
   onSchemaCreated: () => void;
+  workspaces?: Array<{ id: string; title: string }>;
+  defaultModule?: string;
 }
 
-export const SchemaManager: React.FC<SchemaManagerProps> = ({ onSchemaCreated }) => {
+export const SchemaManager: React.FC<SchemaManagerProps> = ({ onSchemaCreated, workspaces = [], defaultModule = 'Core' }) => {
   const [name, setName] = useState('');
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
-  const [module, setModule] = useState('Core');
+  const [module, setModule] = useState(defaultModule);
   const [fields, setFields] = useState<FieldConfig[]>([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -131,13 +133,31 @@ export const SchemaManager: React.FC<SchemaManagerProps> = ({ onSchemaCreated })
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1">Module</label>
-            <input
-              type="text"
-              value={module}
-              onChange={(e) => setModule(e.target.value)}
-              className="frappe-input w-full"
-            />
+            <label className="block text-xs font-semibold text-slate-600 mb-1">
+              Module / Page
+              <span className="ml-1 text-[10px] text-slate-400 font-normal">(which workspace will show this DocType)</span>
+            </label>
+            {workspaces.length > 0 ? (
+              <select
+                value={module}
+                onChange={(e) => setModule(e.target.value)}
+                className="frappe-input w-full"
+              >
+                {workspaces.map((ws) => (
+                  <option key={ws.id} value={ws.id}>
+                    {ws.title}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={module}
+                onChange={(e) => setModule(e.target.value)}
+                placeholder="e.g. CRM"
+                className="frappe-input w-full"
+              />
+            )}
           </div>
         </div>
 

@@ -1,15 +1,26 @@
 import React from 'react';
-import { Home, ExternalLink, Filter, Calendar, MoreHorizontal } from 'lucide-react';
+import { Home, ExternalLink, Filter, Calendar, MoreHorizontal, FileSpreadsheet, Plus } from 'lucide-react';
+
+interface ScopedDocType {
+  name: string;
+  label?: string;
+}
 
 interface FrappeWorkspaceViewProps {
   moduleName: string;
+  workspaceTitle?: string;
+  scopedDoctypes?: ScopedDocType[];
   onNavigateDoctype: (doctypeName: string) => void;
 }
 
 export const FrappeWorkspaceView: React.FC<FrappeWorkspaceViewProps> = ({
   moduleName,
+  workspaceTitle,
+  scopedDoctypes = [],
   onNavigateDoctype,
 }) => {
+  const displayTitle = workspaceTitle || moduleName;
+
   return (
     <div className="flex-1 bg-white min-h-[calc(100vh-3rem)] p-6 overflow-y-auto font-sans">
       {/* Top Breadcrumb Bar */}
@@ -17,20 +28,19 @@ export const FrappeWorkspaceView: React.FC<FrappeWorkspaceViewProps> = ({
         <div className="flex items-center space-x-2 text-xs font-semibold text-slate-700">
           <Home className="w-3.5 h-3.5 text-slate-400 cursor-pointer" />
           <span className="text-slate-300">/</span>
-          <span className="text-slate-900">{moduleName}</span>
+          <span className="text-slate-900">{displayTitle}</span>
         </div>
         <button className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600">
           <MoreHorizontal className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Main Content Area */}
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Dashboard Chart Card */}
         <div className="frappe-card p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h2 className="text-sm font-semibold text-slate-800">Completed Projects</h2>
+              <h2 className="text-sm font-semibold text-slate-800">{displayTitle} Overview</h2>
               <p className="text-[11px] text-slate-400 mt-0.5">Last synced just now</p>
             </div>
             <div className="flex items-center space-x-2">
@@ -48,25 +58,9 @@ export const FrappeWorkspaceView: React.FC<FrappeWorkspaceViewProps> = ({
             </div>
           </div>
 
-          {/* Simple Chart SVG Mock */}
-          <div className="h-32 flex items-end justify-between px-4 pt-4 border-b border-slate-100 pb-2 relative">
-            <div className="absolute left-0 top-0 bottom-6 flex flex-col justify-between text-[10px] text-slate-400">
-              <span>5</span>
-              <span>4</span>
-              <span>3</span>
-              <span>2</span>
-              <span>1</span>
-            </div>
-            <div className="w-full ml-6 border-b border-rose-400 relative h-0 mb-6"></div>
-          </div>
-          <div className="flex justify-between text-[10px] text-slate-400 px-6 font-medium">
-            <span>Jul 2025</span>
-            <span>Sep 2025</span>
-            <span>Nov 2025</span>
-            <span>Jan 2026</span>
-            <span>Mar 2026</span>
-            <span>May 2026</span>
-            <span>Jul 2026</span>
+          {/* Chart placeholder */}
+          <div className="h-28 bg-slate-50/50 rounded-lg flex items-center justify-center border border-dashed border-slate-200">
+            <span className="text-xs text-slate-400 font-medium">No chart data yet for {displayTitle}</span>
           </div>
         </div>
 
@@ -74,105 +68,73 @@ export const FrappeWorkspaceView: React.FC<FrappeWorkspaceViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="frappe-card p-4">
             <div className="text-xs font-semibold text-slate-700 flex items-center justify-between">
-              <span>Open Projects</span>
+              <span>Total Records</span>
               <MoreHorizontal className="w-3.5 h-3.5 text-slate-300" />
             </div>
             <div className="text-2xl font-semibold text-slate-900 mt-2">0</div>
           </div>
-
           <div className="frappe-card p-4">
             <div className="text-xs font-semibold text-slate-700 flex items-center justify-between">
-              <span>Non Completed Tasks</span>
+              <span>Active DocTypes</span>
               <MoreHorizontal className="w-3.5 h-3.5 text-slate-300" />
             </div>
-            <div className="text-2xl font-semibold text-slate-900 mt-2">0</div>
+            <div className="text-2xl font-semibold text-slate-900 mt-2">{scopedDoctypes.length}</div>
           </div>
-
           <div className="frappe-card p-4">
             <div className="text-xs font-semibold text-slate-700 flex items-center justify-between">
-              <span>Working Hours</span>
+              <span>Updated</span>
               <MoreHorizontal className="w-3.5 h-3.5 text-slate-300" />
             </div>
-            <div className="text-2xl font-semibold text-slate-900 mt-2">0.000</div>
+            <div className="text-sm font-semibold text-slate-900 mt-2">just now</div>
           </div>
         </div>
 
-        {/* Reports & Masters Section */}
-        <div className="pt-4 space-y-4">
-          <h2 className="text-sm font-bold text-slate-800">Reports & Masters</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Column 1: Core Masters */}
-            <div className="frappe-card p-5 space-y-3">
-              <h3 className="text-xs font-bold text-slate-700">Projects</h3>
-              <div className="space-y-2 text-xs text-slate-600">
-                <div
-                  onClick={() => onNavigateDoctype('Project')}
-                  className="flex items-center space-x-1 hover:text-blue-600 cursor-pointer font-medium"
-                >
-                  <span>Project</span>
-                  <ExternalLink className="w-3 h-3 text-slate-400" />
-                </div>
-                <div
-                  onClick={() => onNavigateDoctype('Task')}
-                  className="flex items-center space-x-1 hover:text-blue-600 cursor-pointer font-medium"
-                >
-                  <span>Task</span>
-                  <ExternalLink className="w-3 h-3 text-slate-400" />
-                </div>
-                <div className="flex items-center space-x-1 hover:text-blue-600 cursor-pointer">
-                  <span>Project Template</span>
-                  <ExternalLink className="w-3 h-3 text-slate-400" />
-                </div>
-                <div className="flex items-center space-x-1 hover:text-blue-600 cursor-pointer">
-                  <span>Project Type</span>
-                  <ExternalLink className="w-3 h-3 text-slate-400" />
-                </div>
-                <div className="hover:text-blue-600 cursor-pointer">Project Update</div>
-              </div>
-            </div>
-
-            {/* Column 2: Time Tracking */}
-            <div className="frappe-card p-5 space-y-3">
-              <h3 className="text-xs font-bold text-slate-700">Time Tracking</h3>
-              <div className="space-y-2 text-xs text-slate-600">
-                <div className="flex items-center space-x-1 hover:text-blue-600 cursor-pointer font-medium">
-                  <span>Timesheet</span>
-                  <ExternalLink className="w-3 h-3 text-slate-400" />
-                </div>
-                <div className="flex items-center space-x-1 hover:text-blue-600 cursor-pointer">
-                  <span>Activity Type</span>
-                  <ExternalLink className="w-3 h-3 text-slate-400" />
-                </div>
-                <div className="flex items-center space-x-1 hover:text-blue-600 cursor-pointer">
-                  <span>Activity Cost</span>
-                  <ExternalLink className="w-3 h-3 text-slate-400" />
-                </div>
-              </div>
-            </div>
-
-            {/* Column 3: Reports */}
-            <div className="frappe-card p-5 space-y-3">
-              <h3 className="text-xs font-bold text-slate-700">Reports</h3>
-              <div className="space-y-2 text-xs text-slate-600">
-                <div className="hover:text-blue-600 cursor-pointer">Daily Timesheet Summary</div>
-                <div className="hover:text-blue-600 cursor-pointer">Project wise Stock Tracking</div>
-                <div className="hover:text-blue-600 cursor-pointer">Timesheet Billing Summary</div>
-                <div className="hover:text-blue-600 cursor-pointer">Delayed Tasks Summary</div>
-              </div>
-            </div>
+        {/* DocTypes in this Workspace — Quick Access Links */}
+        <div className="pt-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-800">{displayTitle} — Entities</h2>
           </div>
 
-          {/* Settings Card */}
-          <div className="frappe-card p-5 space-y-3 max-w-xs">
-            <h3 className="text-xs font-bold text-slate-700">Settings</h3>
-            <div className="text-xs text-slate-600">
-              <div className="flex items-center space-x-1 hover:text-blue-600 cursor-pointer">
-                <span>Projects Settings</span>
-                <ExternalLink className="w-3 h-3 text-slate-400" />
+          {scopedDoctypes.length === 0 ? (
+            <div className="frappe-card p-8 text-center space-y-3">
+              <FileSpreadsheet className="w-8 h-8 text-slate-300 mx-auto" />
+              <p className="text-sm font-semibold text-slate-700">No entities in this workspace yet</p>
+              <p className="text-xs text-slate-400">
+                Use the <strong>DocType Builder</strong> in the sidebar to create entities and assign them to <strong>{displayTitle}</strong>.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {scopedDoctypes.map((dt) => (
+                <div key={dt.name} className="frappe-card p-5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-slate-700">{dt.label || dt.name}</h3>
+                    <button
+                      onClick={() => onNavigateDoctype(dt.name)}
+                      className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => onNavigateDoctype(dt.name)}
+                    className="w-full text-left text-xs text-slate-600 hover:text-blue-600 font-medium flex items-center space-x-1.5 group"
+                  >
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500" />
+                    <span>View all {dt.label || dt.name} records</span>
+                  </button>
+                </div>
+              ))}
+
+              {/* Create new DocType shortcut card */}
+              <div className="frappe-card p-5 border-dashed border-slate-200 flex flex-col items-center justify-center space-y-2 text-center min-h-[100px] cursor-pointer group hover:border-slate-400 transition-colors">
+                <Plus className="w-5 h-5 text-slate-300 group-hover:text-slate-600" />
+                <span className="text-xs text-slate-400 group-hover:text-slate-700 font-medium">
+                  Add entity to {displayTitle}
+                </span>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
