@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// Вказуємо відносний шлях, який підхоплює Nginx
 const BACKEND_URL = import.meta.env.VITE_API_URL || '/api/v1';
 const PDF_SERVICE_URL = import.meta.env.VITE_PDF_SERVICE_URL || '/api/v1/print';
 
