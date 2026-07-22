@@ -106,6 +106,8 @@ async def list_doctypes(
     return doctypes
 
 @router.get("/{name}", response_model=DoctypeResponse)
+@router.get("", response_model=list[DocTypeResponse])
+@router.get("/", response_model=list[DocTypeResponse])
 async def get_doctype(
     name: str,
     accept_language: str | None = Header(default=None),
