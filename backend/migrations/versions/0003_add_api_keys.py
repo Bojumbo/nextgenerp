@@ -23,7 +23,7 @@ def upgrade() -> None:
         sa.Column('api_key', sa.String(length=255), nullable=False),
         sa.Column('api_secret_hash', sa.String(length=255), nullable=False),
         sa.Column('role_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('doctype_scopes', postgresql.JSONB(as_uuid=True), nullable=False),
+        sa.Column('doctype_scopes', postgresql.JSONB(), nullable=False),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
         sa.ForeignKeyConstraint(['role_id'], ['roles.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id'),
