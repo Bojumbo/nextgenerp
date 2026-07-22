@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Sales Receipt</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            color: #333;
+            max-width: 800px;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #eee;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #1e3a8a;
+        }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .details-table th, .details-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .details-table th {
+            background-color: #f3f4f6;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: right;
+            font-size: 1.1em;
+        }
+        .highlight {
+            color: #2563eb;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>Invoice: {{ sales.name }}</h1>
+            <p>Date: {{ sales.created_at }}</p>
+        </div>
+        <div style="text-align: right;">
+            <h3>ERP NextGen</h3>
+            <!-- Safe evaluation: if company is null, renders blank string -->
+            <p>{{ company.address }}</p>
+        </div>
+    </div>
+
+    <div>
+        <h3>Billing Info</h3>
+        <!-- Safe evaluation: customer can be completely null, fields evaluate to empty string safely -->
+        <p><strong>Customer:</strong> {{ customer.name }}</p>
+        <p><strong>Email:</strong> {{ customer.email }}</p>
+        <p><strong>Phone:</strong> {{ customer.phone }}</p>
+    </div>
+
+    <table class="details-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Total Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Sales Document: {{ sales.name }}</td>
+                <td>{{ sales.status }}</td>
+                <td class="highlight">${{ sales.amount }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <!-- Safe evaluation: payment linked instance could be null -->
+        <p>Total Paid: <span class="highlight">${{ payment.amount }}</span></p>
+        <p>Balance Due: <span class="highlight">${{ balance }}</span></p>
+    </div>
+</body>
+</html>

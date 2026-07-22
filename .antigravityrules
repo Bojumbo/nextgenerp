@@ -1,0 +1,42 @@
+# AGENT SYSTEM INSTRUCTIONS & CODE CONVENTIONS
+
+## 1. PROJECT ARCHITECTURE & CORE PRINCIPLES
+- **Architecture**: Metadata-driven Custom ERP System inspired by ERPNext.
+- **Universal Entity Principle**: Every entity is a Document (`DocType`). Dynamic fields are stored in `doc_instances.data` (JSONB) and defined in `docfields`.
+- **Dynamic Relations**: Inter-document relationships MUST use the `doc_relations` table (polymorphic linking). Never write hardcoded relational FKs for dynamic entities.
+- **Base Language**: English (`en`). All code, variable names, DB columns, comments, and default labels MUST be in English.
+
+## 2. BACKEND TECH STACK & STRICT RULES
+- **Framework**: Python 3.12+, FastAPI (100% Async).
+- **ORM**: Async SQLAlchemy 2.0 (use `AsyncSession`, `select`, `async_sessionmaker`).
+- **Validation**: Pydantic v2 schemas (`model_config = ConfigDict(from_attributes=True)`).
+- **Database**: PostgreSQL 16+.
+- **Async Workers**: Redis 7 + ARQ.
+- **No Blocking Calls**: NEVER use synchronous I/O (`requests`, `time.sleep`, sync DB calls) inside async endpoints or workers. Always use `httpx`, `asyncio.sleep`, and AsyncORM.
+
+## 3. MANDATORY BUSINESS LOGIC RULES
+1. **Field-Level Security (RBAC)**:
+   - EVERY API endpoint fetching or updating documents MUST evaluate `field_permissions` for the user's role.
+   - Strip `Hidden` fields from output JSON. Reject mutations to read-only (`Read`) fields with HTTP 403.
+2. **Sales Completion Rule**:
+   - A `Sales` document CANNOT transition to status `'Completed'` unless a linked `PaymentEntry` document exists in `doc_relations` covering the required amount.
+3. **Email Processing Pipeline**:
+   - Ingested email -> Check `sender_email` in `Contacts`.
+   - If contact missing -> Status = `Unresolved` (Queue for "Create Lead / Counterparty").
+   - If contact exists -> ALWAYS link email to `Contact` (visible in `Counterparty`).
+   - Scan subject against active `CRM Deals`/`Projects` linked to Contact/Counterparty -> If matched, ALSO link to Deal/Project.
+4. **PDF Engine Null Safety**:
+   - Jinja2 PDF templates MUST evaluate linked documents safely. Missing linked entities must render empty string `""`, never throw Jinja/AttributeError runtime exceptions.
+
+## 4. FRONTEND TECH STACK & RULES
+- **Framework**: React 19 + TypeScript + Vite.
+- **Styling**: Tailwind CSS v4 + Shadcn UI.
+- **Data Fetching**: TanStack Query v5 (React Query) + Axios.
+- **Forms**: React Hook Form with Zod validation.
+- **Dynamic Forms**: UI components MUST dynamically render form fields based on the `docfields` schema returned by backend `/api/v1/doctypes/{name}`.
+
+## 5. CODE OUTPUT FORMAT FOR AGENT
+- Always write production-ready, fully typed TypeScript and Python code.
+- Do NOT use placeholder comments like `# TODO: implement later` or `// ...`.
+- Include Alembic migration commands whenever SQLAlchemy models are modified.
+- Include structured JSON logging using `structlog`.
