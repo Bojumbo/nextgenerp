@@ -95,7 +95,7 @@ export const DocInstanceList: React.FC<DocInstanceListProps> = ({
   );
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 w-full">
       {/* 1. Header Toolbar */}
       <div className="flex items-center justify-between">
         <div>

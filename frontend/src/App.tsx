@@ -183,7 +183,7 @@ export const App: React.FC = () => {
           )}
 
           {activeView === 'list' && selectedDoctype && (
-            <div className="p-6">
+            <div className="p-6 w-full h-full">
               <DocInstanceList
                 doctype={selectedDoctype}
                 allDocTypes={doctypes}
