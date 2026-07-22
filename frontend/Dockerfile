@@ -1,14 +1,16 @@
-FROM node:20-alpine
+FROM node:20-alpine AS build
+WORKDIR /app
 
-WORKDIR /workspace
+# Копіювання конфігурацій залежностей
+COPY package*.json ./
+RUN npm install --legacy-peer-deps
 
-# Install dependencies
-COPY package.json .
-RUN npm install
-
-# Copy source code
+# Копіювання вихідного коду та збірка
 COPY . .
+RUN npm run build
 
-EXPOSE 5173
-
-CMD ["npm", "run", "dev"]
+# Продакшн сервер Nginx
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
