@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const BACKEND_URL = 'http://localhost:8000/api/v1';
-const PDF_SERVICE_URL = 'http://localhost:8001';
+const BACKEND_URL = import.meta.env.VITE_API_URL || '/api/v1';
+const PDF_SERVICE_URL = import.meta.env.VITE_PDF_SERVICE_URL || '/api/v1/print';
 
 // Create base axios instances
 export const api = axios.create({
