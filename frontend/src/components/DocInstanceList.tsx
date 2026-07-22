@@ -29,7 +29,7 @@ interface DocInstanceListProps {
   allDocTypes: DocType[];
   role: string;
   refreshTrigger: number;
-  onEditDoc: (doc: DocInstance) => void;
+  onEditDoc: (doc: DocInstance, list: DocInstance[]) => void;
   onCreateNew?: () => void;
 }
 
@@ -44,6 +44,10 @@ export const DocInstanceList: React.FC<DocInstanceListProps> = ({
   const [documents, setDocuments] = useState<DocInstance[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isRendering, setIsRendering] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterField, setFilterField] = useState('');
+  const [filterValue, setFilterValue] = useState('');
 
   // Email simulation State
   const [emailSender, setEmailSender] = useState('john@example.com');
@@ -89,10 +93,31 @@ export const DocInstanceList: React.FC<DocInstanceListProps> = ({
     }
   };
 
-  const filteredDocs = documents.filter((d) =>
-    d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    JSON.stringify(d.data).toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredDocs = documents.filter((d) => {
+    const matchSearch =
+      d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      JSON.stringify(d.data).toLowerCase().includes(searchQuery.toLowerCase());
+    const matchFilter =
+      !filterField || !filterValue ||
+      String(d.data[filterField] ?? '').toLowerCase().includes(filterValue.toLowerCase());
+    return matchSearch && matchFilter;
+  });
+
+  const allSelected = filteredDocs.length > 0 && filteredDocs.every((d) => selectedIds.has(d.id));
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredDocs.map((d) => d.id)));
+    }
+  };
+
+  const toggleSelectOne = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelectedIds(next);
+  };
 
   return (
     <div className="space-y-6 w-full">
@@ -116,7 +141,10 @@ export const DocInstanceList: React.FC<DocInstanceListProps> = ({
             />
           </div>
 
-          <button className="frappe-btn frappe-btn-secondary text-xs flex items-center space-x-1">
+          <button
+            onClick={() => setShowFilter(!showFilter)}
+            className={`frappe-btn text-xs flex items-center space-x-1 ${showFilter ? 'frappe-btn-primary' : 'frappe-btn-secondary'}`}
+          >
             <Filter className="w-3 h-3 text-slate-400" />
             <span>Filter</span>
           </button>
@@ -133,6 +161,43 @@ export const DocInstanceList: React.FC<DocInstanceListProps> = ({
         </div>
       </div>
 
+      {/* Filter Panel */}
+      {showFilter && (
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center space-x-3">
+          <div className="flex-1">
+            <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Field</label>
+            <select
+              value={filterField}
+              onChange={(e) => { setFilterField(e.target.value); setFilterValue(''); }}
+              className="frappe-input w-full text-xs"
+            >
+              <option value="">All Fields</option>
+              {doctype.fields.filter((f) => !f.hidden || role === 'Admin').map((f) => (
+                <option key={f.fieldname} value={f.fieldname}>{f.label || f.fieldname}</option>
+              ))}
+            </select>
+          </div>
+          {filterField && (
+            <div className="flex-1">
+              <label className="block text-[10px] font-semibold text-slate-400 uppercase mb-1">Value</label>
+              <input
+                type="text"
+                value={filterValue}
+                onChange={(e) => setFilterValue(e.target.value)}
+                placeholder="Filter value..."
+                className="frappe-input w-full text-xs"
+              />
+            </div>
+          )}
+          <button
+            onClick={() => { setFilterField(''); setFilterValue(''); setShowFilter(false); }}
+            className="frappe-btn frappe-btn-secondary text-xs mt-4"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
       {/* 2. Documents Table Card */}
       <div className="frappe-card overflow-hidden">
         {filteredDocs.length === 0 ? (
@@ -145,7 +210,12 @@ export const DocInstanceList: React.FC<DocInstanceListProps> = ({
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200/80 text-slate-500 font-semibold">
                   <th className="py-2.5 px-4 w-8">
-                    <input type="checkbox" className="rounded border-slate-300" />
+                    <input
+                      type="checkbox"
+                      checked={allSelected}
+                      onChange={toggleSelectAll}
+                      className="rounded border-slate-300"
+                    />
                   </th>
                   <th className="py-2.5 px-4">Name</th>
                   {doctype.fields
@@ -163,11 +233,16 @@ export const DocInstanceList: React.FC<DocInstanceListProps> = ({
                 {filteredDocs.map((doc) => (
                   <tr
                     key={doc.id}
-                    onClick={() => onEditDoc(doc)}
+                    onClick={() => onEditDoc(doc, filteredDocs)}
                     className="hover:bg-slate-50/70 transition-colors cursor-pointer"
                   >
                     <td className="py-2.5 px-4" onClick={(e) => e.stopPropagation()}>
-                      <input type="checkbox" className="rounded border-slate-300" />
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(doc.id)}
+                        onChange={() => toggleSelectOne(doc.id)}
+                        className="rounded border-slate-300"
+                      />
                     </td>
                     <td className="py-2.5 px-4 font-semibold text-slate-900">{doc.name}</td>
                     {doctype.fields
@@ -211,7 +286,7 @@ export const DocInstanceList: React.FC<DocInstanceListProps> = ({
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
-                        onClick={() => onEditDoc(doc)}
+                        onClick={() => onEditDoc(doc, filteredDocs)}
                         className="p-1 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-900"
                         title="Edit Document"
                       >

@@ -51,6 +51,10 @@ export const erpApi = {
     }, { headers: { 'X-User-Role': role } });
     return res.data;
   },
+  deleteDocument: async (doctype: string, name: string, role: string = 'Admin') => {
+    const res = await api.delete(`/documents/${doctype}/${name}`, { headers: { 'X-User-Role': role } });
+    return res.data;
+  },
 
   // Relations
   getRelations: async (doctype: string, name: string) => {

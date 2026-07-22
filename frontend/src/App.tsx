@@ -66,6 +66,7 @@ export const App: React.FC = () => {
   const [currentModule, setCurrentModule] = useState('Projects');
   const [activeView, setActiveView] = useState<'home' | 'workspace' | 'list' | 'form' | 'schema'>('home');
   const [editingDoc, setEditingDoc] = useState<any | null>(null);
+  const [formDocList, setFormDocList] = useState<any[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
 
@@ -98,14 +99,20 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleEditDoc = (doc: any) => {
+  const handleEditDoc = (doc: any, list?: any[]) => {
     setEditingDoc(doc);
+    if (list) setFormDocList(list);
     setActiveView('form');
   };
 
   const handleCreateNewDoc = () => {
     setEditingDoc(null);
+    setFormDocList([]);
     setActiveView('form');
+  };
+
+  const handleNavigateDoc = (doc: any) => {
+    setEditingDoc(doc);
   };
 
   const handleSelectModule = (modId: string) => {
@@ -200,8 +207,12 @@ export const App: React.FC = () => {
               doctype={selectedDoctype}
               role={role}
               existingDoc={editingDoc}
+              allDoctypes={doctypes}
+              docList={formDocList}
               onSaveSuccess={handleRefresh}
               onBackToList={() => setActiveView('list')}
+              onNavigateDoc={handleNavigateDoc}
+              onCreateNew={handleCreateNewDoc}
             />
           )}
 

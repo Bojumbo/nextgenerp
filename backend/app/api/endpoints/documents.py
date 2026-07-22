@@ -493,3 +493,24 @@ async def update_document(
     instance.data = await enforce_field_read_security(doctype_name, instance.data, role, db)
     return instance
 
+@router.delete("/{doctype_name}/{name}", status_code=status.HTTP_200_OK)
+async def delete_document(
+    doctype_name: str,
+    name: str,
+    role: str = Depends(CheckDocPermission("delete")),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(DocInstance)
+        .where((DocInstance.doctype_name == doctype_name) & (DocInstance.name == name))
+    )
+    instance = result.scalar_one_or_none()
+    if not instance:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document '{name}' of type '{doctype_name}' not found"
+        )
+    await db.delete(instance)
+    await db.commit()
+    logger.info("Deleted document", doctype=doctype_name, name=name, role=role)
+    return {"detail": f"Document '{name}' deleted successfully"}
