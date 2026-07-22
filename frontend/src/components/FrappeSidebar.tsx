@@ -81,6 +81,7 @@ export const FrappeSidebar: React.FC<FrappeSidebarProps> = ({
   const [setupOpen, setSetupOpen] = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
   const [moduleDropdownOpen, setModuleDropdownOpen] = useState(false);
+  const [sidebarSearch, setSidebarSearch] = useState('');
 
   const currentWs = workspaces.find(
     (w) => w.id.toLowerCase() === currentModule.toLowerCase()
@@ -96,7 +97,10 @@ export const FrappeSidebar: React.FC<FrappeSidebarProps> = ({
   // STRICT FILTERING: Only show DocTypes that belong to the active module!
   const filteredDoctypes = doctypes.filter((dt) => {
     if (!dt.module) return false;
-    return dt.module.toLowerCase() === currentModule.toLowerCase();
+    const matchModule = dt.module.toLowerCase() === currentModule.toLowerCase();
+    const matchSearch = !sidebarSearch.trim() ||
+      (dt.label || dt.name).toLowerCase().includes(sidebarSearch.toLowerCase());
+    return matchModule && matchSearch;
   });
 
   return (
@@ -172,12 +176,23 @@ export const FrappeSidebar: React.FC<FrappeSidebarProps> = ({
           <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search entities..."
+            value={sidebarSearch}
+            onChange={(e) => setSidebarSearch(e.target.value)}
             className="w-full bg-white border border-slate-200 rounded-lg pl-8 pr-12 py-1 text-xs text-slate-800 focus:outline-none focus:border-slate-400"
           />
-          <span className="text-[9px] text-slate-400 font-medium absolute right-2.5 top-2 bg-slate-100 px-1 rounded">
-            Ctrl+K
-          </span>
+          {sidebarSearch ? (
+            <button
+              onClick={() => setSidebarSearch('')}
+              className="text-[9px] text-slate-400 font-medium absolute right-2.5 top-2 bg-slate-100 px-1 rounded hover:bg-slate-200"
+            >
+              ✕
+            </button>
+          ) : (
+            <span className="text-[9px] text-slate-400 font-medium absolute right-2.5 top-2 bg-slate-100 px-1 rounded">
+              Ctrl+K
+            </span>
+          )}
         </div>
       </div>
 
@@ -277,8 +292,18 @@ export const FrappeSidebar: React.FC<FrappeSidebarProps> = ({
           </button>
           {setupOpen && (
             <div className="pl-9 pr-2 py-1 space-y-1 text-[11px] text-slate-500">
-              <div className="hover:text-slate-900 cursor-pointer py-0.5">Workflow Settings</div>
-              <div className="hover:text-slate-900 cursor-pointer py-0.5">Custom Fields</div>
+              <button
+                onClick={() => onSelectView('schema')}
+                className="w-full text-left hover:text-slate-900 cursor-pointer py-0.5 hover:bg-slate-100 rounded px-2 transition-colors"
+              >
+                Workflow Settings
+              </button>
+              <button
+                onClick={() => onSelectView('schema')}
+                className="w-full text-left hover:text-slate-900 cursor-pointer py-0.5 hover:bg-slate-100 rounded px-2 transition-colors"
+              >
+                Custom Fields
+              </button>
             </div>
           )}
         </div>
@@ -297,8 +322,18 @@ export const FrappeSidebar: React.FC<FrappeSidebarProps> = ({
           </button>
           {reportsOpen && (
             <div className="pl-9 pr-2 py-1 space-y-1 text-[11px] text-slate-500">
-              <div className="hover:text-slate-900 cursor-pointer py-0.5">General Ledger</div>
-              <div className="hover:text-slate-900 cursor-pointer py-0.5">Sales Analytics</div>
+              <button
+                onClick={() => onSelectView('list')}
+                className="w-full text-left hover:text-slate-900 cursor-pointer py-0.5 hover:bg-slate-100 rounded px-2 transition-colors"
+              >
+                General Ledger
+              </button>
+              <button
+                onClick={() => onSelectView('list')}
+                className="w-full text-left hover:text-slate-900 cursor-pointer py-0.5 hover:bg-slate-100 rounded px-2 transition-colors"
+              >
+                Sales Analytics
+              </button>
             </div>
           )}
         </div>
