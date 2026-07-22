@@ -223,7 +223,7 @@ async def process_email_pipeline(
         # 1. Search for a Contact matching sender_email
         contact_q = select(DocInstance).where(
             (DocInstance.doctype_name == "Contact") &
-            (DocInstance.data["email"].as_string() == sender_email)
+            (DocInstance.data["email"].astext == sender_email)
         )
         res = await db.execute(contact_q)
         contact = res.scalar_one_or_none()
@@ -269,7 +269,7 @@ async def process_email_pipeline(
             (
                 (DocRelation.source_type == "Contact") &
                 (DocRelation.source_id == contact.name) &
-                (DocRelation.target_type.in_(["CRM Deal", "Project"]))
+                (DocRelation.target_type.in_(["Deal", "Project"]))
             ) |
             (
                 (DocRelation.target_type == "Contact") &

@@ -91,4 +91,10 @@ export const erpApi = {
     const res = await api.post('/translations/custom-fields', { language, source_text, translated_text });
     return res.data;
   },
+
+  // Print PDF
+  printPdf: async (doctype: string, name: string) => {
+    const res = await api.get(`/print/pdf/${doctype}/${name}`, { responseType: 'blob' });
+    return res.data;
+  },
 };

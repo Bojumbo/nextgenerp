@@ -40,7 +40,7 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: 1440
       DOMAIN_NAME: ${DOMAIN_NAME}
       CORS_ORIGINS: ${CORS_ORIGINS}
-      PDF_SERVICE_URL: http://pdf-service:3000/render-pdf
+      PDF_SERVICE_URL: http://pdf-service:3000
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,7 +50,7 @@ services:
   worker:
     build: ./backend
     restart: always
-    command: arq app.workers.email_worker.WorkerSettings
+    command: arq app.worker.main.WorkerSettings
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
@@ -61,6 +61,8 @@ services:
   pdf-service:
     build: ./pdf-service
     restart: always
+    environment:
+      PORT: 3000
 
   frontend:
     build: ./frontend

@@ -136,45 +136,12 @@ export const DocInstanceList: React.FC<DocInstanceListProps> = ({
 
   const handleSafeRender = async (salesDoc: DocInstance) => {
     setIsRendering(true);
-    setPdfHtml(null);
     try {
-      // Resolve linked contact & payments
-      const rels = await erpApi.getRelations(salesDoc.doctype_name, salesDoc.name);
-      
-      let customerData = null;
-      let paymentData = null;
-
-      for (let rel of rels) {
-        const otherName = rel.source_id === salesDoc.name ? rel.target_id : rel.source_id;
-        const otherType = rel.source_id === salesDoc.name ? rel.target_type : rel.source_type;
-
-        if (otherType === 'Contact') {
-          const res = await erpApi.getDocument('Contact', otherName, role);
-          customerData = res.data;
-          customerData.name = res.name;
-        } else if (otherType === 'PaymentEntry') {
-          const res = await erpApi.getDocument('PaymentEntry', otherName, role);
-          paymentData = res.data;
-        }
-      }
-
-      // Compile context. NOTE: Some fields are intentionally left out if missing, to prove the engine is safe!
-      const context = {
-        sales: {
-          name: salesDoc.name,
-          status: salesDoc.data.status || 'Draft',
-          amount: salesDoc.data.amount || 0.0,
-          created_at: new Date(salesDoc.created_at).toLocaleDateString(),
-        },
-        customer: customerData, // can be null
-        payment: paymentData,   // can be null
-        balance: (salesDoc.data.amount || 0.0) - (paymentData?.amount || 0.0),
-      };
-
-      const html = await erpApi.renderSafeReceipt(context);
-      setPdfHtml(html);
+      const pdfBlob = await erpApi.printPdf(salesDoc.doctype_name, salesDoc.name);
+      const url = window.URL.createObjectURL(new Blob([pdfBlob], { type: 'application/pdf' }));
+      window.open(url, '_blank');
     } catch (err: any) {
-      alert(`PDF Render Failed: ${err.message}`);
+      alert(`PDF Render Failed: ${err.response?.data?.detail || err.message}`);
     } finally {
       setIsRendering(false);
     }

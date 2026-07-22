@@ -196,145 +196,6 @@ async def validate_sales_completion(doc_name: str, new_data: Dict[str, Any], db:
                        f"Required payment: ${sales_amount:.2f}. Total paid via linked PaymentEntry: ${total_paid:.2f}."
             )
 
-@router.post("/{doctype_name}", response_model=DocInstanceResponse, status_code=status.HTTP_201_CREATED)
-async def create_document(
-    doctype_name: str,
-    payload: DocumentCreatePayload,
-    request: Request,
-    role: str = Depends(CheckDocPermission("create")),
-    db: AsyncSession = Depends(get_db)
-):
-    logger.info("Creating document", doctype=doctype_name, name=payload.name, role=role)
-
-    # 1. Enforce validation schema
-    fields = await validate_document_data(doctype_name, payload.data, db)
-
-    # 2. Check if name is unique
-    existing_res = await db.execute(
-        select(DocInstance).where(DocInstance.name == payload.name)
-    )
-    if existing_res.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Document instance with name '{payload.name}' already exists"
-        )
-
-    # 3. Enforce write field security (asynchronous checks)
-    await enforce_field_write_security(doctype_name, payload.data, None, role, db)
-
-    # 4. Enforce Sales completion if trying to create as Completed
-    if doctype_name == "Sales":
-        await validate_sales_completion(payload.name, payload.data, db)
-
-    instance = DocInstance(
-        doctype_name=doctype_name,
-        name=payload.name,
-        data=payload.data,
-        owner=payload.owner or "system"
-    )
-    db.add(instance)
-    await db.commit()
-    await db.refresh(instance)
-
-    # Trigger OnCreate Automations
-    try:
-        await trigger_automations(doctype_name, "OnCreate", instance, db)
-        await db.refresh(instance)
-    except Exception as ae:
-        logger.error("Failed to run OnCreate automations", error=str(ae))
-
-    # 5. Filter output read security (asynchronous checks)
-    instance.data = await enforce_field_read_security(doctype_name, instance.data, role, db)
-    return instance
-
-@router.get("/{doctype_name}", response_model=List[DocInstanceResponse])
-async def list_documents(
-    doctype_name: str,
-    role: str = Depends(CheckDocPermission("read")),
-    db: AsyncSession = Depends(get_db)
-):
-    result = await db.execute(
-        select(DocInstance).where(DocInstance.doctype_name == doctype_name)
-    )
-    instances = result.scalars().all()
-
-    for inst in instances:
-        inst.data = await enforce_field_read_security(doctype_name, inst.data, role, db)
-        
-    return instances
-
-@router.get("/{doctype_name}/{name}", response_model=DocInstanceResponse)
-async def get_document(
-    doctype_name: str,
-    name: str,
-    role: str = Depends(CheckDocPermission("read")),
-    db: AsyncSession = Depends(get_db)
-):
-    result = await db.execute(
-        select(DocInstance)
-        .where((DocInstance.doctype_name == doctype_name) & (DocInstance.name == name))
-    )
-    instance = result.scalar_one_or_none()
-    if not instance:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Document '{name}' of type '{doctype_name}' not found"
-        )
-
-    instance.data = await enforce_field_read_security(doctype_name, instance.data, role, db)
-    return instance
-
-@router.put("/{doctype_name}/{name}", response_model=DocInstanceResponse)
-async def update_document(
-    doctype_name: str,
-    name: str,
-    payload: DocInstanceUpdate,
-    role: str = Depends(CheckDocPermission("write")),
-    db: AsyncSession = Depends(get_db)
-):
-    # 1. Fetch current instance
-    result = await db.execute(
-        select(DocInstance)
-        .where((DocInstance.doctype_name == doctype_name) & (DocInstance.name == name))
-    )
-    instance = result.scalar_one_or_none()
-    if not instance:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Document '{name}' not found"
-        )
-
-    # 2. Get fields definitions
-    await validate_document_data(doctype_name, payload.data, db)
-
-    # 3. Enforce write field security (asynchronous checks)
-    await enforce_field_write_security(doctype_name, payload.data, instance.data, role, db)
-
-    # 4. Enforce Sales completion logic if setting to Completed
-    if doctype_name == "Sales":
-        await validate_sales_completion(name, payload.data, db)
-
-    # Track status transitions for OnStatusChange trigger
-    old_status = instance.data.get("status")
-    new_status = payload.data.get("status")
-
-    instance.data = payload.data
-    await db.commit()
-    await db.refresh(instance)
-
-    # Trigger Update Automations
-    try:
-        if old_status != new_status:
-            await trigger_automations(doctype_name, "OnStatusChange", instance, db)
-            await db.refresh(instance)
-        await trigger_automations(doctype_name, "OnUpdate", instance, db)
-        await db.refresh(instance)
-    except Exception as ae:
-        logger.error("Failed to run OnUpdate/OnStatusChange automations", error=str(ae))
-
-    instance.data = await enforce_field_read_security(doctype_name, instance.data, role, db)
-    return instance
-
 @router.post("/relations", response_model=DocRelationResponse, status_code=status.HTTP_201_CREATED)
 async def create_relation(payload: DocRelationCreate, db: AsyncSession = Depends(get_db)):
     parent_q = select(DocInstance).where(
@@ -492,3 +353,143 @@ async def get_document_graph(
             for edge in edges
         ]
     }
+
+@router.post("/{doctype_name}", response_model=DocInstanceResponse, status_code=status.HTTP_201_CREATED)
+async def create_document(
+    doctype_name: str,
+    payload: DocumentCreatePayload,
+    request: Request,
+    role: str = Depends(CheckDocPermission("create")),
+    db: AsyncSession = Depends(get_db)
+):
+    logger.info("Creating document", doctype=doctype_name, name=payload.name, role=role)
+
+    # 1. Enforce validation schema
+    fields = await validate_document_data(doctype_name, payload.data, db)
+
+    # 2. Check if name is unique
+    existing_res = await db.execute(
+        select(DocInstance).where(DocInstance.name == payload.name)
+    )
+    if existing_res.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Document instance with name '{payload.name}' already exists"
+        )
+
+    # 3. Enforce write field security (asynchronous checks)
+    await enforce_field_write_security(doctype_name, payload.data, None, role, db)
+
+    # 4. Enforce Sales completion if trying to create as Completed
+    if doctype_name == "Sales":
+        await validate_sales_completion(payload.name, payload.data, db)
+
+    instance = DocInstance(
+        doctype_name=doctype_name,
+        name=payload.name,
+        data=payload.data,
+        owner=payload.owner or "system"
+    )
+    db.add(instance)
+    await db.commit()
+    await db.refresh(instance)
+
+    # Trigger OnCreate Automations
+    try:
+        await trigger_automations(doctype_name, "OnCreate", instance, db)
+        await db.refresh(instance)
+    except Exception as ae:
+        logger.error("Failed to run OnCreate automations", error=str(ae))
+
+    # 5. Filter output read security (asynchronous checks)
+    instance.data = await enforce_field_read_security(doctype_name, instance.data, role, db)
+    return instance
+
+@router.get("/{doctype_name}", response_model=List[DocInstanceResponse])
+async def list_documents(
+    doctype_name: str,
+    role: str = Depends(CheckDocPermission("read")),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(DocInstance).where(DocInstance.doctype_name == doctype_name)
+    )
+    instances = result.scalars().all()
+
+    for inst in instances:
+        inst.data = await enforce_field_read_security(doctype_name, inst.data, role, db)
+        
+    return instances
+
+@router.get("/{doctype_name}/{name}", response_model=DocInstanceResponse)
+async def get_document(
+    doctype_name: str,
+    name: str,
+    role: str = Depends(CheckDocPermission("read")),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(DocInstance)
+        .where((DocInstance.doctype_name == doctype_name) & (DocInstance.name == name))
+    )
+    instance = result.scalar_one_or_none()
+    if not instance:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document '{name}' of type '{doctype_name}' not found"
+        )
+
+    instance.data = await enforce_field_read_security(doctype_name, instance.data, role, db)
+    return instance
+
+@router.put("/{doctype_name}/{name}", response_model=DocInstanceResponse)
+async def update_document(
+    doctype_name: str,
+    name: str,
+    payload: DocInstanceUpdate,
+    role: str = Depends(CheckDocPermission("write")),
+    db: AsyncSession = Depends(get_db)
+):
+    # 1. Fetch current instance
+    result = await db.execute(
+        select(DocInstance)
+        .where((DocInstance.doctype_name == doctype_name) & (DocInstance.name == name))
+    )
+    instance = result.scalar_one_or_none()
+    if not instance:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document '{name}' not found"
+        )
+
+    # 2. Get fields definitions
+    await validate_document_data(doctype_name, payload.data, db)
+
+    # 3. Enforce write field security (asynchronous checks)
+    await enforce_field_write_security(doctype_name, payload.data, instance.data, role, db)
+
+    # 4. Enforce Sales completion logic if setting to Completed
+    if doctype_name == "Sales":
+        await validate_sales_completion(name, payload.data, db)
+
+    # Track status transitions for OnStatusChange trigger
+    old_status = instance.data.get("status")
+    new_status = payload.data.get("status")
+
+    instance.data = payload.data
+    await db.commit()
+    await db.refresh(instance)
+
+    # Trigger Update Automations
+    try:
+        if old_status != new_status:
+            await trigger_automations(doctype_name, "OnStatusChange", instance, db)
+            await db.refresh(instance)
+        await trigger_automations(doctype_name, "OnUpdate", instance, db)
+        await db.refresh(instance)
+    except Exception as ae:
+        logger.error("Failed to run OnUpdate/OnStatusChange automations", error=str(ae))
+
+    instance.data = await enforce_field_read_security(doctype_name, instance.data, role, db)
+    return instance
+
